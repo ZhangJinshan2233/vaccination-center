@@ -3,10 +3,12 @@
 
 ## How to run 
 
-### `npm start`
+### `npm install`
 
-### `npm test`
+### `cd frontend`
 
-### `npm run build`
+### `npm install`
 
-### `npm run eject`
+### `cd ..`
+
+### `npm run dev`
