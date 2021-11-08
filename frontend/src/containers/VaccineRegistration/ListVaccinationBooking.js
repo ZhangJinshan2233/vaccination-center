@@ -15,40 +15,46 @@ import { Link } from 'react-router-dom';
 import ModeEditIcon from "@mui/icons-material/ModeEdit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import React, { Component } from "react";
-
-function getBooking() {
-  return [
-    {
-      id: 1,
-      name: "Tan Ah Kow",
-      centerName: "Bukit Timah CC",
-      centerId: 3,
-      startTime: new Date("2021-12-01T09:00:00"),
-    },
-    {
-      id: 2,
-      name: "Jean Lee Ah Meow",
-      centerName: "Bukit Timah CC",
-      centerId: 3,
-      startTime: new Date("2021-12-01T10:00:00"),
-    },
-    {
-      id: 3,
-      name: "Lew Ah Boi",
-      centerName: "Bukit Timah CC",
-      centerId: 3,
-      startTime: new Date("2021-12-01T11:00:00"),
-    },
-  ];
-}
+import myAxios from '../../myAxios';
 
 export class VaccineRegistrationListing extends Component {
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      reservationRecords: []
+    };
+    this.handleDelete = this.handleDelete.bind(this)
+  }
+  componentDidMount() {
+    this.getBooking();
+  }
+
+  handleDelete(_id) {
+    myAxios.delete(`/reservationRecords/${_id}`)
+      .then(res => {
+        myAxios.get('/reservationRecords')
+          .then(res => {
+            this.setState({
+              ...this.state, reservationRecords: res.data.reservationRecords
+            })
+          })
+      })
+  }
+  getBooking() {
+    myAxios.get('/reservationRecords')
+      .then(res => {
+        this.setState({
+          ...this.state, reservationRecords: this.state.reservationRecords.concat(res.data.reservationRecords)
+        })
+      })
+  }
   render() {
     return (
       <React.Fragment>
         <CssBaseline />
         <Container>
-          <Box sx={{mt: 8}}>
+          <Box sx={{ mt: 8 }}>
             <Typography component="h1" variant="h5">
               Active Booking
             </Typography>
@@ -63,23 +69,23 @@ export class VaccineRegistrationListing extends Component {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {getBooking().map((row) => (
+                  {this.state.reservationRecords.length && this.state.reservationRecords.map((row) => (
                     <TableRow
-                      key={row.id}
+                      key={row._id}
                       sx={{ "&:last-child td, &:last-child th": { border: 0 } }}
                     >
                       <TableCell component="th" scope="row">
-                        {row.name}
+                        {row.fullName}
                       </TableCell>
-                      <TableCell align="left">{row.centerName}</TableCell>
+                      <TableCell align="left">{row._centerId.name}</TableCell>
                       <TableCell align="left">
-                        {row.startTime.toString()}
+                        {row._slot.date.toString()}
                       </TableCell>
                       <TableCell align="left">
-                        <Button component={Link} to='/bookings/1'>
+                        <Button component={Link} to={() => `/bookings/${row._id}`}>
                           <ModeEditIcon />
                         </Button>
-                        <Button>
+                        <Button onClick={() => this.handleDelete(row._id)}>
                           <DeleteIcon />
                         </Button>
                       </TableCell>

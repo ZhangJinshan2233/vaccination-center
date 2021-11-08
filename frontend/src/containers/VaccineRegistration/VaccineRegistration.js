@@ -9,36 +9,86 @@ import {
   MenuItem,
   InputLabel,
 } from "@mui/material";
-import DateTimePicker from '@mui/lab/DateTimePicker';
 import React, { Component } from "react";
+import myAxios from '../../myAxios';
 
-function getVaccineCenter() {
-  return [
-    { name: "None", id: 0},
-    { name: "Bukit Batok CC", id: 1 },
-    { name: "Bukit Panjang CC", id: 2 },
-    { name: "Bukit Timah CC", id: 3 },
-    { name: "Outram Park Polyclinic", id: 4 },
-  ];
-}
 
 export class VaccineRegistration extends Component {
+
   constructor(props) {
     super(props);
     this.state = {
       selectedCenter: 0,
-      date: new Date(),
+      selectedSlot:0,
+      vaccinationCenters:[{ name: "None", _id: 0}],
+      slots:[{ date: "None", _id: 0}],
+      idNumber:"",
+      fullName:'',
     };
     this.handleSelect = this.handleSelect.bind(this);
-    this.handleDateChange = this.handleDateChange.bind(this);
+    this.handleSelectSlot=this.handleSelectSlot.bind(this);
+    this.handleSubmit=this.handleSubmit.bind(this);
+    this.setIdNumber=this.setIdNumber.bind(this);
+    this.setFullName=this.setFullName.bind(this)
   }
+
+  componentDidMount() {
+    this.getVaccineCenter();
+  }
+ 
+  setIdNumber(event){
+    const state=this.state
+    this.setState({...state, idNumber: event.target.value});
+   
+  }
+
+  setFullName(event){
+    const state=this.state
+    this.setState({...state, fullName: event.target.value});
+   
+  }
+
+  
+  handleSubmit(event){
+    event.preventDefault();
+    let record={
+      idNumber:this.state.idNumber,
+      _slot:this.state.selectedSlot,
+      _centerId:this.state.selectedCenter,
+      fullName:this.state.fullName
+    }
+    
+    myAxios.post('/reservationRecords',record)
+    .then(res => {
+      console.log(res)
+    })
+  }
+
+ getVaccineCenter() {
+    myAxios.get('/vaccinationCenters')
+      .then(res => {
+        console.log(this.state.vaccinationCenters.concat(res.data.vaccinationCenters))
+        this.setState({
+          ...this.state,vaccinationCenters: this.state.vaccinationCenters.concat(res.data.vaccinationCenters)
+        })
+      })
+  }
+
   handleSelect(event) {
-    const state = this.state;
+    const state=this.state
     this.setState({...state, selectedCenter: event.target.value});
+   
+    myAxios.get(`/slots/center/${event.target.value}`)
+    .then(res => {
+      this.setState({
+        ...state,slots:[{ date: "None", _id: 0},...res.data.slots],selectedCenter: event.target.value
+      })
+    })
   }
-  handleDateChange(value) {
+
+  handleSelectSlot(event) {
     const state = this.state;
-    this.setState({...state, date: value});
+    this.setState({...state, selectedSlot: event.target.value});
   }
   render() {
     return (
@@ -63,6 +113,7 @@ export class VaccineRegistration extends Component {
               name="NRIC"
               autoComplete="nric"
               sx={{mb: 2}}
+              onChange={this.setIdNumber}
               autoFocus
             />
             <TextField
@@ -73,6 +124,7 @@ export class VaccineRegistration extends Component {
               name="name"
               autoComplete="name"
               sx={{mb: 2}}
+              onChange={this.setFullName}
             />
             <InputLabel id="vaccineCenterLabel">Vaccine Center</InputLabel>
             <Select
@@ -85,21 +137,28 @@ export class VaccineRegistration extends Component {
               onChange={this.handleSelect}
               sx={{mb: 2}}
             >
-              {getVaccineCenter().map((v) => {
-                return <MenuItem key={v.id} value={v.id}>{v.name}</MenuItem>;
+              {this.state.vaccinationCenters.length && this.state.vaccinationCenters.map((v) => {
+                return <MenuItem key={v._id} value={v._id}>{v.name}</MenuItem>;
               })}
             </Select>
-            <DateTimePicker
-              renderInput={(props) => <TextField {...props} />}
-              label="Slot"
-              value={this.state.date}
-              onChange={this.handleDateChange}
-              required
-            />
+            <Select
+              labelId="slotLabel"
+              label="Slots"
+              fullWidth
+              id="slot"
+              value={this.state.selectedSlot}
+              onChange={this.handleSelectSlot}
+              sx={{mb: 2}}
+            >
+              {this.state.slots.length &&this.state.slots.map((v) => {
+                return <MenuItem key={v._id} value={v._id}>{v.date.split('T')[0]}</MenuItem>;
+              })}
+            </Select>
             <Button
               type="submit"
               fullWidth
               variant="contained"
+              onClick={this.handleSubmit}
               sx={{ mt: 3, mb: 2 }}
             >
               Register!

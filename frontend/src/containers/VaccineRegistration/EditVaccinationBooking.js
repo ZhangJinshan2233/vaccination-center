@@ -9,46 +9,86 @@ import {
   MenuItem,
   InputLabel,
 } from "@mui/material";
-import DateTimePicker from "@mui/lab/DateTimePicker";
 import React, { Component } from "react";
-
-function getVaccineCenter() {
-  return [
-    { name: "None", id: 0 },
-    { name: "Bukit Batok CC", id: 1 },
-    { name: "Bukit Panjang CC", id: 2 },
-    { name: "Bukit Timah CC", id: 3 },
-    { name: "Outram Park Polyclinic", id: 4 },
-  ];
-}
-
-function getBooking() {
-  return {
-    id: 1,
-    name: "Tan Ah Kow",
-    centerName: "Bukit Timah CC",
-    centerId: 3,
-    startTime: new Date("2021-12-01T09:00:00"),
-  };
-}
+import myAxios from '../../myAxios';
 
 export class EditVaccineRegistration extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      selectedCenter: getBooking.apply().centerId,
-      date: getBooking.apply().startTime,
+      selectedCenter: 0,
+      selectedSlot: 0,
+      idNumber: '',
+      fullName: "",
+      vaccinationCenters: [{ name: "None", _id: 0 }],
+      slots: [{ date: "None", _id: 0 }],
+
     };
     this.handleSelect = this.handleSelect.bind(this);
-    this.handleDateChange = this.handleDateChange.bind(this);
+    this.handleSelectSlot = this.handleSelectSlot.bind(this);
+    this.handleSubmit=this.handleSubmit.bind(this);
   }
+
   handleSelect(event) {
-    this.setState({ selectedCenter: event.target.value });
+    const state = this.state
+    this.setState({ ...state, selectedCenter: event.target.value });
+    myAxios.get(`/slots/center/${event.target.value}`)
+      .then(res => {
+        this.setState({
+          ...state, slots: [{ date: "None", _id: 0 }, ...res.data.slots], selectedCenter: event.target.value
+        })
+      })
   }
-  handleDateChange(value) {
+
+  handleSelectSlot(event) {
     const state = this.state;
-    this.setState({ ...state, date: value });
+    this.setState({ ...state, selectedSlot: event.target.value });
   }
+
+  initializeLoading() {
+    const state = this.state
+    myAxios.get('/vaccinationCenters')
+      .then(resForVaccinationCenters => {
+        myAxios.get(`/reservationRecords/${this.props.match.params.bookingId}`)
+
+          .then(resForReservationRecord => {
+
+            myAxios.get(`/slots/center/${resForReservationRecord.data.reservationRecord._centerId._id}`)
+              .then(resForCenter => {
+
+                this.setState({
+                  ...state,
+                  vaccinationCenters: state.vaccinationCenters.concat(resForVaccinationCenters.data.vaccinationCenters),
+                  slots: [{ date: "None", _id: 0 }, ...resForCenter.data.slots],
+                  idNumber: resForReservationRecord.data.reservationRecord.idNumber,
+                  fullName: resForReservationRecord.data.reservationRecord.fullName,
+                  selectedCenter: resForReservationRecord.data.reservationRecord._centerId._id,
+                  selectedSlot: resForReservationRecord.data.reservationRecord._slot._id,
+                })
+              })
+          })
+      })
+  }
+
+  handleSubmit(event){
+    event.preventDefault();
+    let record={
+      idNumber:this.state.idNumber,
+      _slot:this.state.selectedSlot,
+      _centerId:this.state.selectedCenter,
+      fullName:this.state.fullName
+    }
+    console.log(record)
+    myAxios.put(`/reservationRecords/${this.props.match.params.bookingId}`,record)
+    .then(res => {
+      console.log(res)
+    })
+  }
+
+  componentDidMount() {
+    this.initializeLoading();
+  }
+
   render() {
     return (
       <React.Fragment>
@@ -71,8 +111,8 @@ export class EditVaccineRegistration extends Component {
               label="NRIC Number"
               name="NRIC"
               autoComplete="nric"
-              value={getBooking().id}
-              sx={{mb: 2}}
+              value={this.state.idNumber}
+              sx={{ mb: 2 }}
               autoFocus
             />
             <TextField
@@ -80,8 +120,8 @@ export class EditVaccineRegistration extends Component {
               fullWidth
               id="name"
               label="Full Name"
-              value={getBooking().name}
-              sx={{mb: 2}}
+              value={this.state.fullName}
+              sx={{ mb: 2 }}
               name="name"
               autoComplete="name"
             />
@@ -94,27 +134,34 @@ export class EditVaccineRegistration extends Component {
               id="vaccineCenter"
               value={this.state.selectedCenter}
               onChange={this.handleSelect}
-              sx={{mb: 2}}
+              sx={{ mb: 2 }}
             >
-              {getVaccineCenter().map((v) => {
+              {this.state.vaccinationCenters.length && this.state.vaccinationCenters.map((v) => {
                 return (
-                  <MenuItem key={v.id} value={v.id}>
+                  <MenuItem key={v._id} value={v._id}>
                     {v.name}
                   </MenuItem>
                 );
               })}
             </Select>
-            <DateTimePicker
-              renderInput={(props) => <TextField {...props} />}
-              label="Slot"
-              value={this.state.date}
-              onChange={this.handleDateChange}
-              required
-            />
+            <Select
+              labelId="slotLabel"
+              label="Slots"
+              fullWidth
+              id="slot"
+              value={this.state.selectedSlot}
+              onChange={this.handleSelectSlot}
+              sx={{ mb: 2 }}
+            >
+              {this.state.slots.length && this.state.slots.map((v) => {
+                return <MenuItem key={v._id} value={v._id}>{v.date.split('T')[0]}</MenuItem>;
+              })}
+            </Select>
             <Button
               type="submit"
               fullWidth
               variant="contained"
+              onClick={this.handleSubmit}
               sx={{ mt: 3, mb: 2 }}
             >
               Register!

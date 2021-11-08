@@ -1,0 +1,31 @@
+{
+  "name": "vaccination-center",
+  "version": "1.0.0",
+  "description": "\"homework\"",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "server": "node server.js",
+    "frontend": "npm start --prefix frontend",
+    "dev": "concurrently \"npm run server\" \"npm run frontend\"",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "\"test\""
+  ],
+  "author": "zhangjinshan",
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^6.3.0",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "helmet": "^4.6.0",
+    "joi": "^17.4.2",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.9.20",
+    "morgan": "^1.10.0",
+    "passport": "^0.5.0",
+    "passport-jwt": "^4.0.0",
+    "safe-await": "^1.0.1"
+  }
+}
